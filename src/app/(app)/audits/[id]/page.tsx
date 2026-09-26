@@ -20,6 +20,7 @@ import { StatusBadge } from "@/components/ui/status-badge";
 import { formatDateTime } from "@/lib/utils";
 import { AuditProgress } from "@/components/audit/audit-progress";
 import { RescanButton } from "@/components/audit/rescan-button";
+import { DownloadReportButton } from "@/components/audit/download-report-button";
 
 export default async function AuditReportPage({ params }: { params: Promise<{ id: string }> }) {
   const user = await requireUser();
@@ -75,6 +76,44 @@ export default async function AuditReportPage({ params }: { params: Promise<{ id
           </div>
         </div>
         <div className="flex gap-2">
+          {audit[0].status === "completed" ? (
+            <DownloadReportButton
+              report={{
+                domain: audit[0].domain,
+                targetUrl: audit[0].targetUrl,
+                createdAt: audit[0].createdAt.toISOString(),
+                overallScore: audit[0].overallScore,
+                performance: audit[0].performance,
+                seo: audit[0].seo,
+                accessibility: audit[0].accessibility,
+                security: audit[0].security,
+                ux: audit[0].ux,
+                summary: ai[0]?.summary ?? null,
+                findings: findings.map((finding) => ({
+                  title: finding.title,
+                  severity: finding.severity,
+                  summary: finding.summary,
+                  recommendedFix: finding.recommendedFix,
+                })),
+                metrics: metrics.map((metric) => ({
+                  metricLabel: metric.metricLabel,
+                  numericValue: metric.numericValue,
+                  unit: metric.unit,
+                  source: metric.source,
+                })),
+                technologies: tech.map((technology) => ({
+                  name: technology.name,
+                  category: technology.category,
+                  confidence: technology.confidence,
+                })),
+                recommendations: recs.map((recommendation) => ({
+                  priority: recommendation.priority,
+                  title: recommendation.title,
+                  description: recommendation.description,
+                })),
+              }}
+            />
+          ) : null}
           <RescanButton auditId={audit[0].id} />
         </div>
       </header>
