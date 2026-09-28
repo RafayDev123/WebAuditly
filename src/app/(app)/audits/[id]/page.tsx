@@ -63,6 +63,24 @@ export default async function AuditReportPage({ params }: { params: Promise<{ id
   const highCount = findings.filter((f) => f.severity === "high" || f.severity === "critical").length;
   const mediumCount = findings.filter((f) => f.severity === "medium").length;
   const lowCount = findings.filter((f) => f.severity === "low").length;
+  const lighthouseMetrics = metrics.filter((metric) => metric.source === "pagespeed-lab");
+  const fieldMetrics = metrics.filter((metric) => metric.source === "crux-field");
+  const pageSpeedWarning = stages.find((stage) => stage.stageKey === "performance")?.details;
+
+  function metricValue(metric: (typeof metrics)[number]) {
+    if (metric.numericValue === null) return "—";
+    const value = metric.metricKey.endsWith("_cls") ? metric.numericValue.toFixed(2) : metric.numericValue;
+    return `${value}${metric.unit ? ` ${metric.unit}` : ""}`;
+  }
+
+  function metricSource(metric: (typeof metrics)[number]) {
+    if (metric.source === "pagespeed-lab") {
+      const strategy = metric.evidence?.strategy;
+      return `Lighthouse${typeof strategy === "string" ? ` (${strategy})` : ""}`;
+    }
+    if (metric.source === "crux-field") return "CrUX field data";
+    return "Custom HTTP check";
+  }
 
   return (
     <div className="space-y-6">
@@ -131,11 +149,12 @@ export default async function AuditReportPage({ params }: { params: Promise<{ id
         <Card className="grid place-items-center">
           <ScoreRing score={audit[0].overallScore ?? 0} />
           <p className="mono mt-2 text-3xl font-semibold">{audit[0].overallScore ?? "—"} / 100</p>
+          <p className="text-sm text-[var(--muted-foreground)]">Custom site audit score</p>
           <p className="text-sm text-[var(--muted-foreground)]">Score version {audit[0].scoreVersion}</p>
         </Card>
 
         <Card className="space-y-3">
-          <ScoreBar label="Performance" score={audit[0].performance ?? 0} />
+          <ScoreBar label="HTTP performance checks" score={audit[0].performance ?? 0} />
           <ScoreBar label="SEO" score={audit[0].seo ?? 0} />
           <ScoreBar label="Accessibility" score={audit[0].accessibility ?? 0} />
           <ScoreBar label="Security" score={audit[0].security ?? 0} />
@@ -205,7 +224,30 @@ export default async function AuditReportPage({ params }: { params: Promise<{ id
         </Card>
 
         <Card>
-          <h2 className="text-base font-semibold">Performance metrics</h2>
+          <h2 className="text-base font-semibold">Google PageSpeed results</h2>
+          <div className="mt-3 grid grid-cols-2 gap-4">
+            {(["mobile", "desktop"] as const).map((strategy) => {
+              const score = metrics.find((metric) => metric.metricKey === `psi_${strategy}_performance_score`);
+              return (
+                <div key={strategy} className="border-l-2 border-[var(--border)] pl-3">
+                  <p className="text-xs capitalize text-[var(--muted-foreground)]">Lighthouse {strategy}</p>
+                  <p className="mono mt-1 text-2xl font-semibold">
+                    {score?.numericValue !== null && score ? `${score.numericValue} / 100` : "—"}
+                  </p>
+                </div>
+              );
+            })}
+          </div>
+          {!lighthouseMetrics.length ? (
+            <p className="mt-3 text-sm text-[var(--muted-foreground)]">
+              PageSpeed results are unavailable. {pageSpeedWarning ?? "The custom HTTP checks are still available below."}
+            </p>
+          ) : null}
+          {lighthouseMetrics.length > 0 && !fieldMetrics.length ? (
+            <p className="mt-3 text-sm text-[var(--muted-foreground)]">
+              CrUX field data is unavailable for this page or origin; lab results are shown below.
+            </p>
+          ) : null}
           <div className="mt-3 overflow-x-auto">
             <table className="w-full text-left text-sm">
               <thead className="text-xs text-[var(--muted-foreground)]">
@@ -219,10 +261,8 @@ export default async function AuditReportPage({ params }: { params: Promise<{ id
                 {metrics.map((metric) => (
                   <tr key={metric.id} className="border-t border-[var(--border-subtle)]">
                     <td className="py-1">{metric.metricLabel}</td>
-                    <td className="mono py-1">
-                      {metric.numericValue} {metric.unit}
-                    </td>
-                    <td className="py-1 capitalize text-[var(--muted-foreground)]">{metric.source}</td>
+                    <td className="mono py-1">{metricValue(metric)}</td>
+                    <td className="py-1 text-[var(--muted-foreground)]">{metricSource(metric)}</td>
                   </tr>
                 ))}
               </tbody>

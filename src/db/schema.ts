@@ -1,6 +1,7 @@
 import {
   bigint,
   boolean,
+  doublePrecision,
   index,
   integer,
   jsonb,
@@ -167,7 +168,7 @@ export const auditMetrics = pgTable(
     category: categoryEnum("category").notNull(),
     metricKey: varchar("metric_key", { length: 128 }).notNull(),
     metricLabel: varchar("metric_label", { length: 140 }).notNull(),
-    numericValue: bigint("numeric_value", { mode: "number" }),
+    numericValue: doublePrecision("numeric_value"),
     unit: varchar("unit", { length: 32 }),
     status: severityEnum("status").notNull(),
     source: varchar("source", { length: 64 }).default("lab").notNull(),

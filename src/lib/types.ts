@@ -45,7 +45,7 @@ export interface MetricResult {
   numericValue: number;
   unit: string;
   status: Severity;
-  source: "lab" | "field";
+  source: "http-check" | "pagespeed-lab" | "crux-field";
   evidence?: Record<string, unknown>;
 }
 

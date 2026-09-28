@@ -265,7 +265,7 @@ export async function runAuditAnalysis(url: string) {
       numericValue: ttfb,
       unit: "ms",
       status: ttfb < 800 ? "info" : ttfb < 1800 ? "medium" : "high",
-      source: "lab",
+      source: "http-check",
       evidence: { note: "Measured from scanner request timing." },
     },
     {
@@ -275,7 +275,7 @@ export async function runAuditAnalysis(url: string) {
       numericValue: bytes,
       unit: "bytes",
       status: contentLengthStatus(bytes),
-      source: "lab",
+      source: "http-check",
       evidence: { kb: Math.round(bytes / 1024) },
     },
   ];

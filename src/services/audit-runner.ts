@@ -12,6 +12,7 @@ import {
 } from "@/db/schema";
 import { generateAiSummary } from "@/lib/ai";
 import { runAuditAnalysis } from "@/lib/analyzer";
+import { runPageSpeedAnalysis } from "@/lib/pagespeed";
 import { computeScores } from "@/lib/scoring";
 import { SCAN_STAGES } from "@/lib/types";
 import { validatePublicTarget } from "@/lib/url";
@@ -62,8 +63,12 @@ export async function runAuditJob(auditId: string) {
     await setStage(auditId, "connect", "completed");
 
     await setStage(auditId, "performance", "running");
-    const analysis = await runAuditAnalysis(validated.normalizedUrl);
-    await setStage(auditId, "performance", "completed");
+    const [analysis, pageSpeed] = await Promise.all([
+      runAuditAnalysis(validated.normalizedUrl),
+      runPageSpeedAnalysis(validated.normalizedUrl),
+    ]);
+    analysis.metrics.push(...pageSpeed.metrics);
+    await setStage(auditId, "performance", "completed", pageSpeed.warning ?? undefined);
 
     await setStage(auditId, "seo", "completed");
     await setStage(auditId, "accessibility", "completed");
