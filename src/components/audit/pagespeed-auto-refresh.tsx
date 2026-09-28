@@ -28,7 +28,7 @@ export function PageSpeedAutoRefresh({ auditId, needed }: { auditId: string; nee
             setMessage(null);
             router.refresh();
           } else {
-            setMessage(result.warning ?? "Google returned partial results. Missing scores are left blank.");
+            setMessage(result.warning ?? "Google returned partial results. Missing data is left blank.");
             router.refresh();
           }
           return;

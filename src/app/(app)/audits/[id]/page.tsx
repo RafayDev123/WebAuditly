@@ -15,6 +15,8 @@ import { AuditProgress } from "@/components/audit/audit-progress";
 import { RescanButton } from "@/components/audit/rescan-button";
 import { PageSpeedScoreChart } from "@/components/audit/pagespeed-score-chart";
 import { PageSpeedAutoRefresh } from "@/components/audit/pagespeed-auto-refresh";
+import { DownloadReportButton } from "@/components/audit/download-report-button";
+import { PAGESPEED_COMPLETION_KEYS } from "@/lib/pagespeed";
 
 export default async function AuditReportPage({ params }: { params: Promise<{ id: string }> }) {
   const user = await requireUser();
@@ -24,6 +26,7 @@ export default async function AuditReportPage({ params }: { params: Promise<{ id
     .select({
       id: audits.id,
       status: audits.status,
+      targetUrl: audits.targetUrl,
       createdAt: audits.createdAt,
       errorMessage: audits.errorMessage,
       domain: websites.domain,
@@ -43,6 +46,10 @@ export default async function AuditReportPage({ params }: { params: Promise<{ id
   const googleMetrics = metrics.filter((metric) => metric.source === "pagespeed-lab" || metric.source === "crux-field");
   const lighthouseMetrics = googleMetrics.filter((metric) => metric.source === "pagespeed-lab");
   const fieldMetrics = googleMetrics.filter((metric) => metric.source === "crux-field");
+  const googleSuggestions = lighthouseMetrics.filter((metric) => metric.metricKey.includes("_suggestion_"));
+  const googleReportMetrics = googleMetrics.filter(
+    (metric) => !metric.metricKey.includes("_suggestion_") && !metric.metricKey.endsWith("_scan_complete"),
+  );
   const pageSpeedWarning = stages.find((stage) => stage.stageKey === "performance")?.details;
   const lighthouseCategories = [
     { id: "performance", label: "Performance" },
@@ -55,7 +62,24 @@ export default async function AuditReportPage({ params }: { params: Promise<{ id
     mobile: metrics.find((metric) => metric.metricKey === `psi_mobile_${category.id}_score`)?.numericValue ?? null,
     desktop: metrics.find((metric) => metric.metricKey === `psi_desktop_${category.id}_score`)?.numericValue ?? null,
   }));
-  const needsGoogleRefresh = lighthouseScoreData.some((point) => point.mobile === null || point.desktop === null);
+  const savedGoogleKeys = new Set(lighthouseMetrics.map((metric) => metric.metricKey));
+  const needsGoogleRefresh = PAGESPEED_COMPLETION_KEYS.some((key) => !savedGoogleKeys.has(key));
+  const googleRecommendationData = googleSuggestions.map((metric) => {
+    const categoryId = metric.evidence?.category;
+    const categoryLabel = lighthouseCategories.find((category) => category.id === categoryId)?.label ?? "Lighthouse";
+    const strategy = metric.evidence?.strategy;
+    return {
+      category: categoryLabel,
+      strategy: typeof strategy === "string" ? strategy : "device",
+      title: metric.metricLabel,
+      score: metric.numericValue,
+      displayValue: typeof metric.evidence?.displayValue === "string" ? metric.evidence.displayValue : "",
+      recommendation:
+        typeof metric.evidence?.recommendation === "string"
+          ? metric.evidence.recommendation
+          : "Review this audit in Google PageSpeed Insights for details.",
+    };
+  });
 
   function metricValue(metric: (typeof metrics)[number]) {
     if (metric.numericValue === null) return "—";
@@ -83,6 +107,23 @@ export default async function AuditReportPage({ params }: { params: Promise<{ id
           </div>
         </div>
         <div className="flex gap-2">
+          {audit[0].status === "completed" ? (
+            <DownloadReportButton
+              report={{
+                domain: audit[0].domain,
+                targetUrl: audit[0].targetUrl,
+                createdAt: audit[0].createdAt.toISOString(),
+                scores: lighthouseScoreData,
+                metrics: googleReportMetrics.map((metric) => ({
+                  label: metric.metricLabel,
+                  value: metric.numericValue,
+                  unit: metric.unit ?? "",
+                  source: metricSource(metric),
+                })),
+                recommendations: googleRecommendationData,
+              }}
+            />
+          ) : null}
           <RescanButton auditId={audit[0].id} />
         </div>
       </header>
@@ -151,7 +192,7 @@ export default async function AuditReportPage({ params }: { params: Promise<{ id
               </tr>
             </thead>
             <tbody>
-              {googleMetrics.map((metric) => (
+              {googleReportMetrics.map((metric) => (
                 <tr key={metric.id} className="border-t border-[var(--border-subtle)]">
                   <td className="py-1">{metric.metricLabel}</td>
                   <td className="mono py-1">{metricValue(metric)}</td>
@@ -161,7 +202,35 @@ export default async function AuditReportPage({ params }: { params: Promise<{ id
             </tbody>
           </table>
         </div>
-        {!googleMetrics.length ? <p className="mt-3 text-sm text-[var(--muted-foreground)]">No Google metrics were collected.</p> : null}
+        {!googleReportMetrics.length ? <p className="mt-3 text-sm text-[var(--muted-foreground)]">No Google metrics were collected.</p> : null}
+      </Card>
+
+      <Card>
+        <h2 className="text-base font-semibold">Google Lighthouse issues and recommendations</h2>
+        <p className="mt-1 text-sm text-[var(--muted-foreground)]">
+          Failed Lighthouse audits and Google’s guidance for improving them, shown separately for each device.
+        </p>
+        <div className="mt-4 space-y-3">
+          {googleRecommendationData.map((recommendation, index) => (
+            <article key={`${recommendation.strategy}-${recommendation.category}-${recommendation.title}-${index}`} className="border-t border-[var(--border-subtle)] pt-3">
+              <div className="flex flex-wrap items-start justify-between gap-2">
+                <h3 className="text-sm font-semibold">{recommendation.title}</h3>
+                <span className="mono text-xs text-[var(--muted-foreground)]">
+                  {recommendation.category} · {recommendation.strategy} · {recommendation.score ?? "—"}/100
+                </span>
+              </div>
+              {recommendation.displayValue ? (
+                <p className="mt-1 text-sm">Measured: {recommendation.displayValue}</p>
+              ) : null}
+              <p className="mt-2 text-sm text-[var(--muted-foreground)]">{recommendation.recommendation}</p>
+            </article>
+          ))}
+          {!googleRecommendationData.length ? (
+            <p className="text-sm text-[var(--muted-foreground)]">
+              No Lighthouse recommendations are saved yet. Missing Google results are refreshed automatically.
+            </p>
+          ) : null}
+        </div>
       </Card>
     </div>
   );

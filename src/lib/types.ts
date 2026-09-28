@@ -42,7 +42,7 @@ export interface MetricResult {
   category: AuditCategory;
   metricKey: string;
   metricLabel: string;
-  numericValue: number;
+  numericValue: number | null;
   unit: string;
   status: Severity;
   source: "http-check" | "pagespeed-lab" | "crux-field";

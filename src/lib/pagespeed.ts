@@ -6,6 +6,14 @@ type PageSpeedCategory = "performance" | "accessibility" | "best-practices" | "s
 type LighthouseAudit = {
   numericValue?: number;
   displayValue?: string;
+  score?: number | null;
+  scoreDisplayMode?: string;
+  title?: string;
+  description?: string;
+  details?: {
+    overallSavingsMs?: number;
+    overallSavingsBytes?: number;
+  };
 };
 
 type FieldMetric = {
@@ -25,7 +33,10 @@ type PageSpeedResponse = {
   lighthouseResult?: {
     finalUrl?: string;
     lighthouseVersion?: string;
-    categories?: Partial<Record<PageSpeedCategory, { score?: number | null }>>;
+    categories?: Partial<Record<PageSpeedCategory, {
+      score?: number | null;
+      auditRefs?: Array<{ id: string }>;
+    }>>;
     audits?: Record<string, LighthouseAudit>;
     runtimeError?: { message?: string };
   };
@@ -45,6 +56,11 @@ const LIGHTHOUSE_CATEGORIES: Array<{
 export const PAGESPEED_SCORE_KEYS = LIGHTHOUSE_CATEGORIES.flatMap((category) =>
   (["mobile", "desktop"] as const).map((strategy) => `psi_${strategy}_${category.id}_score`),
 );
+export const PAGESPEED_COMPLETION_KEYS = [
+  ...PAGESPEED_SCORE_KEYS,
+  "psi_mobile_scan_complete",
+  "psi_desktop_scan_complete",
+];
 
 const LAB_METRICS = [
   { id: "first-contentful-paint", key: "fcp", label: "First Contentful Paint", unit: "ms", good: 1800, poor: 3000 },
@@ -118,6 +134,43 @@ async function runStrategy(url: string, strategy: Strategy) {
       source: "pagespeed-lab",
       evidence: { ...evidence, category: category.id },
     });
+
+    const recommendations = (lighthouse?.categories?.[category.id]?.auditRefs ?? [])
+      .map((reference) => ({ id: reference.id, audit: lighthouse?.audits?.[reference.id] }))
+      .filter(
+        (entry): entry is { id: string; audit: LighthouseAudit & { score: number; title: string; description: string } } =>
+          typeof entry.audit?.score === "number" &&
+          entry.audit.score < 1 &&
+          Boolean(entry.audit.title && entry.audit.description) &&
+          !["manual", "notApplicable", "informative"].includes(entry.audit.scoreDisplayMode ?? ""),
+      )
+      .sort((left, right) => {
+        const scoreDifference = left.audit.score - right.audit.score;
+        if (scoreDifference !== 0) return scoreDifference;
+        return (right.audit.details?.overallSavingsMs ?? 0) - (left.audit.details?.overallSavingsMs ?? 0);
+      })
+      .slice(0, 4);
+
+    for (const recommendation of recommendations) {
+      const auditScore = Math.round(recommendation.audit.score * 100);
+      metrics.push({
+        category: category.auditCategory,
+        metricKey: `psi_${strategy}_suggestion_${category.id}_${recommendation.id}`,
+        metricLabel: recommendation.audit.title,
+        numericValue: auditScore,
+        unit: "/100",
+        status: pageSpeedScoreSeverity(auditScore),
+        source: "pagespeed-lab",
+        evidence: {
+          ...evidence,
+          category: category.id,
+          recommendation: recommendation.audit.description.replace(/\[([^\]]+)\]\([^)]+\)/g, "$1"),
+          displayValue: recommendation.audit.displayValue,
+          overallSavingsMs: recommendation.audit.details?.overallSavingsMs,
+          overallSavingsBytes: recommendation.audit.details?.overallSavingsBytes,
+        },
+      });
+    }
   }
 
   for (const definition of LAB_METRICS) {
@@ -137,6 +190,17 @@ async function runStrategy(url: string, strategy: Strategy) {
       },
     });
   }
+
+  metrics.push({
+    category: "performance",
+    metricKey: `psi_${strategy}_scan_complete`,
+    metricLabel: `Google Lighthouse ${strategy} scan complete`,
+    numericValue: 1,
+    unit: "",
+    status: "info",
+    source: "pagespeed-lab",
+    evidence,
+  });
 
   return { strategy, result, metrics };
 }

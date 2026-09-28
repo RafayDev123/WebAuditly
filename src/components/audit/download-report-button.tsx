@@ -9,34 +9,24 @@ type ReportData = {
   domain: string;
   targetUrl: string;
   createdAt: string;
-  overallScore: number | null;
-  performance: number | null;
-  seo: number | null;
-  accessibility: number | null;
-  security: number | null;
-  ux: number | null;
-  summary: string | null;
-  findings: Array<{
-    title: string;
-    severity: string;
-    summary: string;
-    recommendedFix: string;
+  scores: Array<{
+    category: string;
+    mobile: number | null;
+    desktop: number | null;
   }>;
   metrics: Array<{
-    metricLabel: string;
-    numericValue: number | null;
-    unit: string | null;
+    label: string;
+    value: number | null;
+    unit: string;
     source: string;
   }>;
-  technologies: Array<{
-    name: string;
-    category: string;
-    confidence: string;
-  }>;
   recommendations: Array<{
-    priority: number;
+    category: string;
+    strategy: string;
     title: string;
-    description: string;
+    score: number | null;
+    displayValue: string;
+    recommendation: string;
   }>;
 };
 
@@ -81,79 +71,47 @@ export function DownloadReportButton({ report }: { report: ReportData }) {
       };
 
       document.setFont("helvetica", "bold");
-      addText("WebsiteAudit AI - Audit Report", 20, 10);
+      addText("Google PageSpeed Insights Report", 20, 10);
       document.setFont("helvetica", "normal");
       addText(report.domain, 14, 3);
       addText(report.targetUrl, 10, 3);
-      addText(`Scanned: ${formatDate(report.createdAt)}`, 10, 14);
+      addText(`Scanned: ${formatDate(report.createdAt)}`, 10, 12);
 
-      addHeading("Overall score");
-      addText(`${report.overallScore ?? "-"} / 100`, 22, 12);
+      addHeading("Lighthouse category scores");
+      report.scores.forEach((score) => {
+        addText(`${score.category}: Mobile ${score.mobile ?? "-"}/100 | Desktop ${score.desktop ?? "-"}/100`, 10, 4);
+      });
 
-      addHeading("Category scores");
-      addText(
-        [
-          `Performance: ${report.performance ?? "-"}`,
-          `SEO: ${report.seo ?? "-"}`,
-          `Accessibility: ${report.accessibility ?? "-"}`,
-          `Security: ${report.security ?? "-"}`,
-          `UX: ${report.ux ?? "-"}`,
-        ].join(" | "),
-        10,
-        12,
-      );
-
-      addHeading("Summary");
-      addText(report.summary ?? "No summary is available for this audit.", 10, 12);
-
-      addHeading("Priority findings");
-      if (report.findings.length) {
-        report.findings.forEach((finding, index) => {
-          addText(`${index + 1}. [${finding.severity.toUpperCase()}] ${finding.title}`, 10, 2);
-          addText(`Summary: ${finding.summary}`, 9, 2);
-          addText(`Recommended fix: ${finding.recommendedFix}`, 9, 8);
-        });
-      } else {
-        addText("No unresolved issues were detected.", 10, 10);
-      }
-
-      addHeading("Performance metrics");
+      addHeading("Google performance metrics");
       if (report.metrics.length) {
         report.metrics.forEach((metric) => {
-          addText(`${metric.metricLabel}: ${metric.numericValue ?? "-"} ${metric.unit ?? ""} (${metric.source})`, 10, 4);
+          addText(`${metric.label}: ${metric.value ?? "-"} ${metric.unit} (${metric.source})`, 10, 4);
         });
       } else {
-        addText("No sufficient lab data collected.", 10, 10);
+        addText("No Google performance metrics were collected.", 10, 6);
       }
 
-      addHeading("Technology stack");
-      addText(
-        report.technologies.length
-          ? report.technologies.map((technology) => `${technology.name} - ${technology.category} (${technology.confidence} confidence)`).join("\n")
-          : "No technologies were confidently detected.",
-        10,
-        10,
-      );
-
-      addHeading("Recommended order");
-      addText(
-        report.recommendations.length
-          ? report.recommendations.map((recommendation) => `${recommendation.priority}. ${recommendation.title}: ${recommendation.description}`).join("\n")
-          : "No recommendations are available.",
-        10,
-        10,
-      );
+      addHeading("Google Lighthouse issues and recommendations");
+      if (report.recommendations.length) {
+        report.recommendations.forEach((item, index) => {
+          addText(`${index + 1}. ${item.title} (${item.category}, ${item.strategy})`, 10, 2);
+          addText(`Audit score: ${item.score ?? "-"}/100${item.displayValue ? ` | ${item.displayValue}` : ""}`, 9, 2);
+          addText(item.recommendation, 9, 8);
+        });
+      } else {
+        addText("No failed Lighthouse recommendations were returned.", 10, 6);
+      }
 
       const totalPages = document.getNumberOfPages();
       for (let page = 1; page <= totalPages; page += 1) {
         document.setPage(page);
         document.setFontSize(8);
         document.setTextColor(110, 110, 110);
-        document.text(`WebsiteAudit AI | Page ${page} of ${totalPages}`, margin, pageHeight - 20);
+        document.text(`Google PageSpeed Insights | Page ${page} of ${totalPages}`, margin, pageHeight - 20);
         document.setTextColor(0, 0, 0);
       }
 
-      const filename = `${report.domain.replace(/[^a-z0-9]+/gi, "-").replace(/^-|-$/g, "") || "website"}-audit-report.pdf`;
+      const filename = `${report.domain.replace(/[^a-z0-9]+/gi, "-").replace(/^-|-$/g, "") || "website"}-pagespeed-report.pdf`;
       document.save(filename);
     } finally {
       setLoading(false);
@@ -163,7 +121,7 @@ export function DownloadReportButton({ report }: { report: ReportData }) {
   return (
     <Button type="button" variant="secondary" onClick={downloadReport} disabled={loading}>
       <Download className="h-4 w-4" aria-hidden="true" />
-      {loading ? "Preparing PDF..." : "Download report"}
+      {loading ? "Preparing PDF..." : "Download PDF"}
     </Button>
   );
 }

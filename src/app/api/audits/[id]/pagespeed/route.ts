@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import { db } from "@/db";
 import { auditMetrics, auditStages, audits } from "@/db/schema";
 import { getSessionUser } from "@/lib/auth/session";
-import { PAGESPEED_SCORE_KEYS, runPageSpeedAnalysis } from "@/lib/pagespeed";
+import { PAGESPEED_COMPLETION_KEYS, runPageSpeedAnalysis } from "@/lib/pagespeed";
 
 export async function POST(_: Request, { params }: { params: Promise<{ id: string }> }) {
   const user = await getSessionUser();
@@ -28,10 +28,10 @@ export async function POST(_: Request, { params }: { params: Promise<{ id: strin
       and(
         eq(auditMetrics.auditId, id),
         eq(auditMetrics.source, "pagespeed-lab"),
-        inArray(auditMetrics.metricKey, PAGESPEED_SCORE_KEYS),
+        inArray(auditMetrics.metricKey, PAGESPEED_COMPLETION_KEYS),
       ),
     );
-  if (new Set(savedScores.map((metric) => metric.metricKey)).size === PAGESPEED_SCORE_KEYS.length) {
+  if (new Set(savedScores.map((metric) => metric.metricKey)).size === PAGESPEED_COMPLETION_KEYS.length) {
     return NextResponse.json({ complete: true, refreshed: false });
   }
 
@@ -51,7 +51,7 @@ export async function POST(_: Request, { params }: { params: Promise<{ id: strin
   try {
     const result = await runPageSpeedAnalysis(audit[0].targetUrl);
     const returnedKeys = new Set(result.metrics.map((metric) => metric.metricKey));
-    const complete = PAGESPEED_SCORE_KEYS.every((key) => returnedKeys.has(key));
+    const complete = PAGESPEED_COMPLETION_KEYS.every((key) => returnedKeys.has(key));
 
     await db.transaction(async (tx) => {
       for (const metric of result.metrics) {
