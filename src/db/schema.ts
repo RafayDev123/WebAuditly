@@ -17,7 +17,7 @@ import {
 export const subscriptionPlanEnum = pgEnum("subscription_plan", ["free", "pro", "agency"]);
 export const auditStatusEnum = pgEnum("audit_status", ["queued", "running", "completed", "failed", "partial"]);
 export const auditStageStatusEnum = pgEnum("audit_stage_status", ["pending", "running", "completed", "failed"]);
-export const categoryEnum = pgEnum("audit_category", ["performance", "seo", "accessibility", "security", "ux", "technology"]);
+export const categoryEnum = pgEnum("audit_category", ["performance", "seo", "accessibility", "best_practices", "security", "ux", "technology"]);
 export const severityEnum = pgEnum("severity", ["critical", "high", "medium", "low", "info"]);
 export const findingStatusEnum = pgEnum("finding_status", ["open", "resolved", "dismissed"]);
 export const techConfidenceEnum = pgEnum("tech_confidence", ["high", "medium", "low"]);

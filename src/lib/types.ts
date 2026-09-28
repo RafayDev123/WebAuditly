@@ -11,7 +11,7 @@ export const SCAN_STAGES = [
 
 export type ScanStageKey = (typeof SCAN_STAGES)[number]["key"];
 export type Severity = "critical" | "high" | "medium" | "low" | "info";
-export type AuditCategory = "performance" | "seo" | "accessibility" | "security" | "ux" | "technology";
+export type AuditCategory = "performance" | "seo" | "accessibility" | "best_practices" | "security" | "ux" | "technology";
 export type AuditStatus = "queued" | "running" | "completed" | "failed" | "partial";
 export type TechnologyConfidence = "high" | "medium" | "low";
 

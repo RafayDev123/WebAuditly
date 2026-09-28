@@ -1,6 +1,7 @@
-import type { MetricResult, Severity } from "@/lib/types";
+import type { AuditCategory, MetricResult, Severity } from "@/lib/types";
 
 type Strategy = "mobile" | "desktop";
+type PageSpeedCategory = "performance" | "accessibility" | "best-practices" | "seo";
 
 type LighthouseAudit = {
   numericValue?: number;
@@ -24,11 +25,26 @@ type PageSpeedResponse = {
   lighthouseResult?: {
     finalUrl?: string;
     lighthouseVersion?: string;
-    categories?: { performance?: { score?: number | null } };
+    categories?: Partial<Record<PageSpeedCategory, { score?: number | null }>>;
     audits?: Record<string, LighthouseAudit>;
     runtimeError?: { message?: string };
   };
 };
+
+const LIGHTHOUSE_CATEGORIES: Array<{
+  id: PageSpeedCategory;
+  auditCategory: AuditCategory;
+  label: string;
+}> = [
+  { id: "performance", auditCategory: "performance", label: "Performance" },
+  { id: "accessibility", auditCategory: "accessibility", label: "Accessibility" },
+  { id: "best-practices", auditCategory: "best_practices", label: "Best Practices" },
+  { id: "seo", auditCategory: "seo", label: "SEO" },
+];
+
+export const PAGESPEED_SCORE_KEYS = LIGHTHOUSE_CATEGORIES.flatMap((category) =>
+  (["mobile", "desktop"] as const).map((strategy) => `psi_${strategy}_${category.id}_score`),
+);
 
 const LAB_METRICS = [
   { id: "first-contentful-paint", key: "fcp", label: "First Contentful Paint", unit: "ms", good: 1800, poor: 3000 },
@@ -62,7 +78,9 @@ async function runStrategy(url: string, strategy: Strategy) {
   const endpoint = new URL("https://www.googleapis.com/pagespeedonline/v5/runPagespeed");
   endpoint.searchParams.set("url", url);
   endpoint.searchParams.set("strategy", strategy);
-  endpoint.searchParams.set("category", "performance");
+  for (const category of LIGHTHOUSE_CATEGORIES) {
+    endpoint.searchParams.append("category", category.id);
+  }
   if (process.env.PAGESPEED_API_KEY) endpoint.searchParams.set("key", process.env.PAGESPEED_API_KEY);
 
   const response = await fetch(endpoint, {
@@ -85,19 +103,22 @@ async function runStrategy(url: string, strategy: Strategy) {
     finalUrl: lighthouse?.finalUrl,
     lighthouseVersion: lighthouse?.lighthouseVersion,
   };
-  const score = Math.round(rawScore * 100);
-  const metrics: MetricResult[] = [
-    {
-      category: "performance",
-      metricKey: `psi_${strategy}_performance_score`,
-      metricLabel: `Lighthouse performance score (${strategy})`,
+  const metrics: MetricResult[] = [];
+  for (const category of LIGHTHOUSE_CATEGORIES) {
+    const categoryScore = lighthouse?.categories?.[category.id]?.score;
+    if (typeof categoryScore !== "number") continue;
+    const score = Math.round(categoryScore * 100);
+    metrics.push({
+      category: category.auditCategory,
+      metricKey: `psi_${strategy}_${category.id}_score`,
+      metricLabel: `Lighthouse ${category.label} score (${strategy})`,
       numericValue: score,
       unit: "/100",
       status: pageSpeedScoreSeverity(score),
       source: "pagespeed-lab",
-      evidence,
-    },
-  ];
+      evidence: { ...evidence, category: category.id },
+    });
+  }
 
   for (const definition of LAB_METRICS) {
     const value = lighthouse?.audits?.[definition.id]?.numericValue;
