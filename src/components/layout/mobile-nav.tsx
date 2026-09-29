@@ -28,7 +28,7 @@ export function MobileNav() {
       {open ? (
         <div className="fixed inset-0 z-40 bg-black/50 p-4 lg:hidden" role="dialog" aria-modal="true">
           <div className="surface mt-10 p-4">
-            <p className="text-sm font-semibold">WebsiteAudit AI</p>
+            <p className="text-sm font-semibold">Auditly</p>
             <nav className="mt-4 space-y-1">
               {items.map(([label, href]) => (
                 <Link key={href} href={href} className="block rounded px-3 py-2 text-sm hover:bg-[var(--surface-hover)]" onClick={() => setOpen(false)}>

@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { Bell } from "lucide-react";
 import { CommandMenu } from "@/components/layout/command-menu";
 import { MobileNav } from "@/components/layout/mobile-nav";
@@ -10,9 +9,6 @@ export function AppHeader({ userName }: { userName: string }) {
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-3">
           <MobileNav />
-          <Link href="/dashboard" className="text-sm font-medium">
-            Dashboard
-          </Link>
         </div>
         <div className="flex items-center gap-2">
           <CommandMenu />

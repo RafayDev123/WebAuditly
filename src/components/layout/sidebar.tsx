@@ -19,7 +19,7 @@ export function Sidebar() {
 
   return (
     <aside className="hidden h-screen w-64 shrink-0 border-r border-[var(--border-subtle)] bg-[var(--surface)] p-4 lg:block">
-      <p className="px-2 text-sm font-semibold">WebsiteAudit AI</p>
+      <p className="px-2 text-sm font-semibold">Auditly</p>
       <nav className="mt-6 space-y-1">
         {items.map(([label, href]) => (
           <Link

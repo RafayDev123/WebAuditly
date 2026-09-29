@@ -7,7 +7,7 @@ export function AuthShell({ title, description, children }: { title: string; des
     <main className="grid min-h-screen place-items-center p-4">
       <div className="w-full max-w-md space-y-4">
         <Link href="/" className="text-sm font-semibold text-[var(--muted-foreground)] hover:text-[var(--foreground)]">
-          ← Back to WebsiteAudit AI
+          ← Back to Auditly
         </Link>
         <Card className="space-y-4">
           <div>

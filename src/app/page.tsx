@@ -21,7 +21,7 @@ export default function HomePage() {
     <main className="min-h-screen bg-[var(--background)] text-[var(--foreground)]">
       <header className="mx-auto flex w-full max-w-7xl items-center justify-between px-4 py-4 md:px-8">
         <Link href="/" className="text-sm font-semibold tracking-wide">
-          WebsiteAudit AI
+          Auditly
         </Link>
         <nav className="hidden items-center gap-5 text-sm text-[var(--muted-foreground)] md:flex">
           {sections.map((item) => (
@@ -162,7 +162,7 @@ export default function HomePage() {
       </section>
 
       <footer className="border-t border-[var(--border-subtle)] py-8 text-center text-sm text-[var(--muted-foreground)]">
-        <p>WebsiteAudit AI · Technical website intelligence for developers, agencies, and modern businesses.</p>
+        <p>Auditly · Technical website intelligence for developers, agencies, and modern businesses.</p>
       </footer>
     </main>
   );

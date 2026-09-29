@@ -6,17 +6,17 @@ import "./globals.css";
 import { ThemeInitScript } from "@/components/theme-init";
 
 export const metadata: Metadata = {
-  title: "WebsiteAudit AI",
+  title: "Auditly",
   description:
     "Technical website intelligence for developers, agencies, and modern businesses. Analyze performance, SEO, accessibility, security signals, UX, and technology stack.",
   openGraph: {
-    title: "WebsiteAudit AI",
+    title: "Auditly",
     description: "Find what is holding your website back.",
     type: "website",
   },
   twitter: {
     card: "summary_large_image",
-    title: "WebsiteAudit AI",
+    title: "Auditly",
     description: "Understand what is wrong with your website — and what to fix next.",
   },
 };
