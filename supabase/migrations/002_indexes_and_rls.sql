@@ -13,54 +13,18 @@ create index if not exists audit_technologies_audit_id_idx on audit_technologies
 create index if not exists recommendations_audit_id_idx on recommendations(audit_id);
 create index if not exists notifications_user_id_idx on notifications(user_id);
 
--- Example RLS strategy for Supabase use.
-alter table users enable row level security;
-alter table websites enable row level security;
-alter table audits enable row level security;
-alter table audit_stages enable row level security;
-alter table audit_metrics enable row level security;
-alter table audit_findings enable row level security;
-alter table audit_technologies enable row level security;
-alter table recommendations enable row level security;
-alter table audit_ai_summaries enable row level security;
-alter table notifications enable row level security;
-alter table subscriptions enable row level security;
-
--- Assumes authenticated user id is available in auth.uid() when integrated with Supabase Auth.
-create policy if not exists users_self_select on users for select using (id = auth.uid());
-create policy if not exists users_self_update on users for update using (id = auth.uid());
-
-create policy if not exists websites_owner_all on websites for all
-  using (user_id = auth.uid())
-  with check (user_id = auth.uid());
-
-create policy if not exists audits_owner_all on audits for all
-  using (user_id = auth.uid())
-  with check (user_id = auth.uid());
-
-create policy if not exists audit_stages_owner_select on audit_stages for select
-  using (exists (select 1 from audits a where a.id = audit_id and a.user_id = auth.uid()));
-
-create policy if not exists audit_metrics_owner_select on audit_metrics for select
-  using (exists (select 1 from audits a where a.id = audit_id and a.user_id = auth.uid()));
-
-create policy if not exists audit_findings_owner_all on audit_findings for all
-  using (exists (select 1 from audits a where a.id = audit_id and a.user_id = auth.uid()))
-  with check (exists (select 1 from audits a where a.id = audit_id and a.user_id = auth.uid()));
-
-create policy if not exists audit_tech_owner_select on audit_technologies for select
-  using (exists (select 1 from audits a where a.id = audit_id and a.user_id = auth.uid()));
-
-create policy if not exists recs_owner_select on recommendations for select
-  using (exists (select 1 from audits a where a.id = audit_id and a.user_id = auth.uid()));
-
-create policy if not exists ai_summary_owner_select on audit_ai_summaries for select
-  using (exists (select 1 from audits a where a.id = audit_id and a.user_id = auth.uid()));
-
-create policy if not exists notifications_owner_all on notifications for all
-  using (user_id = auth.uid())
-  with check (user_id = auth.uid());
-
-create policy if not exists subscriptions_owner_all on subscriptions for all
-  using (user_id = auth.uid())
-  with check (user_id = auth.uid());
+-- Access is authorized by the application's cookie-session layer, not Supabase Auth.
+-- The server connects directly to Postgres, so auth.uid() is not set for app queries.
+alter table users disable row level security;
+alter table auth_sessions disable row level security;
+alter table password_reset_tokens disable row level security;
+alter table websites disable row level security;
+alter table audits disable row level security;
+alter table audit_stages disable row level security;
+alter table audit_metrics disable row level security;
+alter table audit_findings disable row level security;
+alter table audit_technologies disable row level security;
+alter table recommendations disable row level security;
+alter table audit_ai_summaries disable row level security;
+alter table notifications disable row level security;
+alter table subscriptions disable row level security;

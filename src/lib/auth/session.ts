@@ -2,7 +2,7 @@ import crypto from "node:crypto";
 import { cookies } from "next/headers";
 import { and, eq, gt } from "drizzle-orm";
 import { db } from "@/db";
-import { authSessions, users } from "@/db/schema";
+import { authSessions, subscriptions, users } from "@/db/schema";
 
 const SESSION_COOKIE = "wa_session";
 
@@ -46,7 +46,41 @@ export async function destroySession() {
   cookieStore.delete(SESSION_COOKIE);
 }
 
+async function getLocalWorkspaceUser() {
+  const email = "local-workspace@localhost.invalid";
+  let [user] = await db
+    .select({ userId: users.id, email: users.email, fullName: users.fullName })
+    .from(users)
+    .where(eq(users.email, email))
+    .limit(1);
+
+  if (!user) {
+    await db
+      .insert(users)
+      .values({ email, fullName: "Local Workspace", passwordHash: "disabled" })
+      .onConflictDoNothing({ target: users.email });
+    [user] = await db
+      .select({ userId: users.id, email: users.email, fullName: users.fullName })
+      .from(users)
+      .where(eq(users.email, email))
+      .limit(1);
+  }
+
+  if (!user) throw new Error("Unable to initialize local workspace user.");
+
+  await db
+    .insert(subscriptions)
+    .values({ userId: user.userId, plan: "free" })
+    .onConflictDoNothing({ target: subscriptions.userId });
+
+  return user;
+}
+
 export async function getSessionUser() {
+  if (process.env.NODE_ENV === "development") {
+    return getLocalWorkspaceUser();
+  }
+
   const cookieStore = await cookies();
   const token = cookieStore.get(SESSION_COOKIE)?.value;
   if (!token) return null;

@@ -12,16 +12,22 @@ export default function SettingsPage() {
       </header>
 
       <Card className="space-y-3">
-        <h2 className="text-base font-semibold">Session</h2>
-        <Button
-          variant="secondary"
-          onClick={async () => {
-            await fetch("/api/auth/logout", { method: "POST" });
-            window.location.href = "/login";
-          }}
-        >
-          Sign out
-        </Button>
+        <h2 className="text-base font-semibold">
+          {process.env.NODE_ENV === "development" ? "Workspace" : "Session"}
+        </h2>
+        {process.env.NODE_ENV === "development" ? (
+          <p className="text-sm text-[var(--muted-foreground)]">Local development workspace</p>
+        ) : (
+          <Button
+            variant="secondary"
+            onClick={async () => {
+              await fetch("/api/auth/logout", { method: "POST" });
+              window.location.href = "/login";
+            }}
+          >
+            Sign out
+          </Button>
+        )}
       </Card>
     </div>
   );

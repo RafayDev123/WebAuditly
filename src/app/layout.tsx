@@ -1,9 +1,19 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
+import Script from "next/script";
 import { GeistSans } from "geist/font/sans";
 import { GeistMono } from "geist/font/mono";
 import "./globals.css";
-import { ThemeInitScript } from "@/components/theme-init";
+
+const themeInitScript = `(() => {
+  try {
+    const saved = localStorage.getItem('theme');
+    const isDark = saved ? saved === 'dark' : true;
+    document.documentElement.classList.toggle('dark', isDark);
+  } catch {
+    document.documentElement.classList.add('dark');
+  }
+})();`;
 
 export const metadata: Metadata = {
   title: "Auditly",
@@ -28,7 +38,9 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         className={`${GeistSans.variable} ${GeistMono.variable} min-h-screen antialiased`}
         suppressHydrationWarning
       >
-        <ThemeInitScript />
+        <Script id="theme-init" strategy="beforeInteractive">
+          {themeInitScript}
+        </Script>
         {children}
       </body>
     </html>

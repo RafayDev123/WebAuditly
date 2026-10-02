@@ -17,6 +17,8 @@ const sections = [
 ];
 
 export default function HomePage() {
+  const localDevelopment = process.env.NODE_ENV === "development";
+
   return (
     <main className="min-h-screen bg-[var(--background)] text-[var(--foreground)]">
       <header className="mx-auto flex w-full max-w-7xl items-center justify-between px-4 py-4 md:px-8">
@@ -31,11 +33,17 @@ export default function HomePage() {
           ))}
         </nav>
         <div className="flex items-center gap-2">
-          <Link href="/login">
-            <Button variant="ghost">Login</Button>
-          </Link>
-          <Link href="/register">
-            <Button>Run a free audit</Button>
+          {localDevelopment ? (
+            <Link href="/dashboard">
+              <Button variant="ghost">Dashboard</Button>
+            </Link>
+          ) : (
+            <Link href="/login">
+              <Button variant="ghost">Login</Button>
+            </Link>
+          )}
+          <Link href={localDevelopment ? "/audits/new" : "/register"}>
+            <Button>{localDevelopment ? "Run an audit" : "Run a free audit"}</Button>
           </Link>
         </div>
       </header>
