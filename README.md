@@ -14,7 +14,7 @@ It helps developers, agencies, and businesses audit public websites and prioriti
 ## Main Features
 
 - Marketing site with product positioning and audit preview
-- Email/password auth (register/login/forgot/reset)
+- Shared workspace with no login or signup
 - Protected app shell with sidebar + mobile drawer
 - Command palette (`Cmd/Ctrl + K`)
 - New audit workflow (`/audits/new`)
@@ -72,6 +72,7 @@ npm run typecheck
 - Set environment variables from `.env.example`
 - Point `DATABASE_URL` to managed PostgreSQL/Supabase
 - Apply SQL migrations from `supabase/migrations`
+- All visitors share the same workspace and data; do not use this mode for private or sensitive audits.
 
 ## License
 

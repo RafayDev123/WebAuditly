@@ -46,8 +46,8 @@ export async function destroySession() {
   cookieStore.delete(SESSION_COOKIE);
 }
 
-async function getLocalWorkspaceUser() {
-  const email = "local-workspace@localhost.invalid";
+async function getSharedWorkspaceUser() {
+  const email = "shared-workspace@localhost.invalid";
   let [user] = await db
     .select({ userId: users.id, email: users.email, fullName: users.fullName })
     .from(users)
@@ -57,7 +57,7 @@ async function getLocalWorkspaceUser() {
   if (!user) {
     await db
       .insert(users)
-      .values({ email, fullName: "Local Workspace", passwordHash: "disabled" })
+      .values({ email, fullName: "Shared Workspace", passwordHash: "disabled" })
       .onConflictDoNothing({ target: users.email });
     [user] = await db
       .select({ userId: users.id, email: users.email, fullName: users.fullName })
@@ -77,25 +77,5 @@ async function getLocalWorkspaceUser() {
 }
 
 export async function getSessionUser() {
-  if (process.env.NODE_ENV === "development") {
-    return getLocalWorkspaceUser();
-  }
-
-  const cookieStore = await cookies();
-  const token = cookieStore.get(SESSION_COOKIE)?.value;
-  if (!token) return null;
-
-  const tokenHash = sha256(token);
-  const row = await db
-    .select({
-      userId: users.id,
-      email: users.email,
-      fullName: users.fullName,
-    })
-    .from(authSessions)
-    .innerJoin(users, eq(users.id, authSessions.userId))
-    .where(and(eq(authSessions.tokenHash, tokenHash), gt(authSessions.expiresAt, new Date())))
-    .limit(1);
-
-  return row[0] ?? null;
+  return getSharedWorkspaceUser();
 }
